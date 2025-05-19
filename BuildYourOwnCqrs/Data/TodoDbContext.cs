@@ -6,7 +6,7 @@ namespace BuildYourOwnCqrs.Data
     public class TodoDbContext(DbContextOptions<TodoDbContext> options)
     : DbContext(options) 
     {
-        public DbSet<Todo> Todos => Set<Todo>();
+        public virtual DbSet<Todo> Todos => Set<Todo>();
 
         //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         //    => optionsBuilder.UseSqlite("Data Source=todos.db");

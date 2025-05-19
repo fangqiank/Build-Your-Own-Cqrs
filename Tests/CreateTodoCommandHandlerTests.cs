@@ -1,6 +1,7 @@
 ﻿using BuildYourOwnCqrs;
 using BuildYourOwnCqrs.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Tests
 {
@@ -15,7 +16,10 @@ namespace Tests
                 .Options;
 
             using var dbContext = new TodoDbContext(dbContextOptions);
-            var handler = new CreateTodoCommandHandler(dbContext);
+
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+            var handler = new CreateTodoCommandHandler(dbContext, memoryCache);
             var command = new CreateTodoCommand("Test Todo");
 
             // Act

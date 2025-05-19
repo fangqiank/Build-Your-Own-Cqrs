@@ -1,6 +1,5 @@
 ﻿namespace BuildYourOwnCqrs
 {
-
     public class QueryDispatcher(IServiceProvider serviceProvider, ILogger<QueryDispatcher> logger) 
         : IQueryDispatcher
     {

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddDbContext<TodoDbContext>(options =>
     options.UseSqlite("Data Source=todos.db"));
 builder.Services.AddScoped<ICommandDispatcher, CommandDispatcher>();
@@ -19,7 +21,7 @@ builder.Services.AddScoped<
     GetAllTodosQueryHandler
 >();
 builder.Services.AddScoped<
-    ICommandHandler<CompleteTodoCommand, Result>,
+    ICommandHandler<CompleteTodoCommand>,
     CompleteTodoCommandHandler
 >();
 builder.Services.AddScoped<
@@ -87,7 +89,7 @@ app.MapPut("/todos/{id}/complete", async (
     ICommandDispatcher dispatcher
 ) =>
 {
-    var result = await dispatcher.Dispatch<CompleteTodoCommand, Result>(new CompleteTodoCommand(id));
+    var result = await dispatcher.Dispatch<CompleteTodoCommand>(new CompleteTodoCommand(id));
     return result.IsSuccess
         ? Results.NoContent()
         : Results.BadRequest(result.Error);

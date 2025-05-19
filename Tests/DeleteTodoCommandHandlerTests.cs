@@ -2,6 +2,7 @@
 using BuildYourOwnCqrs.Data;
 using BuildYourOwnCqrs.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Tests
 {
@@ -24,7 +25,8 @@ namespace Tests
 
             using (var dbContext = new TodoDbContext(options))
             {
-                var handler = new DeleteTodoCommandHandler(dbContext);
+                var memoryCache = new MemoryCache(new MemoryCacheOptions());
+                var handler = new DeleteTodoCommandHandler(dbContext, memoryCache);
                 var command = new DeleteTodoCommand(1); // Assuming the first Todo has ID=1
 
                 // Act
@@ -46,7 +48,8 @@ namespace Tests
                 .Options;
 
             using var dbContext = new TodoDbContext(options);
-            var handler = new DeleteTodoCommandHandler(dbContext);
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            var handler = new DeleteTodoCommandHandler(dbContext, memoryCache);
             var command = new DeleteTodoCommand(999); // Invalid ID
 
             // Act
