@@ -3,20 +3,30 @@ using BuildYourOwnCqrs.Models;
 
 namespace BuildYourOwnCqrs
 {
-    public record GetTodoByIdQuery(int Id) : IQuery<Result<Todo>>;
+    public record GetTodoByIdQuery(int Id) : IQuery<Todo>;
 
     public class GetTodoByIdQueryHandler(TodoDbContext db)
-    : IQueryHandler<GetTodoByIdQuery, Result<Todo>>
+        : IQueryHandler<GetTodoByIdQuery, Todo>
     {
         public async Task<Result<Todo>> Handle(
             GetTodoByIdQuery query,
-            CancellationToken cancellationToken
-        )
+            CancellationToken cancellationToken)
         {
-            var todo = await db.Todos.FindAsync(query.Id, cancellationToken);
-            return todo is null
-                ? Result<Todo>.Failure("Todo not found")
-                : Result<Todo>.Success(todo);
+            if (query.Id <= 0)
+                return Result<Todo>.Failure("Invalid Todo ID");
+
+            try
+            {
+                var todo = await db.Todos.FindAsync(query.Id, cancellationToken);
+                if (todo is null)
+                    return Result<Todo>.Failure($"Todo with ID {query.Id} not found");
+
+                return Result<Todo>.Success(todo);
+            }
+            catch (Exception ex)
+            {
+                return Result<Todo>.Failure($"Failed to retrieve todo: {ex.Message}");
+            }
         }
     }
 }

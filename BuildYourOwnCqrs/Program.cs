@@ -1,4 +1,4 @@
-using BuildYourOwnCqrs;
+﻿using BuildYourOwnCqrs;
 using BuildYourOwnCqrs.Data;
 using BuildYourOwnCqrs.Models;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +11,11 @@ builder.Services.AddScoped<ICommandDispatcher, CommandDispatcher>();
 builder.Services.AddScoped<IQueryDispatcher, QueryDispatcher>();
 
 builder.Services.AddScoped<
-    ICommandHandler<CreateTodoCommand, Result<Todo>>,
+    ICommandHandler<CreateTodoCommand, Todo>,
     CreateTodoCommandHandler
 >();
 builder.Services.AddScoped<
-    IQueryHandler<GetAllTodosQuery, Result<IEnumerable<Todo>>>,
+    IQueryHandler<GetAllTodosQuery, IEnumerable<Todo>>,
     GetAllTodosQueryHandler
 >();
 builder.Services.AddScoped<
@@ -27,7 +27,7 @@ builder.Services.AddScoped<
     DeleteTodoCommandHandler
 >();
 builder.Services.AddScoped<
-    IQueryHandler<GetTodoByIdQuery, Result<Todo>>, 
+    IQueryHandler<GetTodoByIdQuery, Todo>,
     GetTodoByIdQueryHandler
 >();
 
@@ -59,18 +59,27 @@ app.MapPost("/todos", async (
     ICommandDispatcher dispatcher
 ) =>
 {
-    var result = await dispatcher.Dispatch<CreateTodoCommand, Result<Todo>>(command);
-    return result.IsSuccess
-        ? Results.Created($"/todos/{result.Value!.Id}", result.Value)
-        : Results.BadRequest(result.Error);
+    var result = await dispatcher.Dispatch<CreateTodoCommand, Todo>(command);
+
+    if (result.IsSuccess)
+    {
+        var todo = result.Value;
+        return Results.Created($"/todos/{todo.Id}", todo);
+    }
+
+    return Results.BadRequest(new { error = result.Error });
 });
 
 app.MapGet("/todos", async (IQueryDispatcher dispatcher) =>
 {
-    var result = await dispatcher.Dispatch<GetAllTodosQuery, Result<IEnumerable<Todo>>>(new GetAllTodosQuery());
-    return result.IsSuccess
-        ? Results.Ok(result.Value)
-        : Results.BadRequest(result.Error);
+    var result = await dispatcher.Dispatch<GetAllTodosQuery, IEnumerable<Todo>>(new GetAllTodosQuery());
+
+    if (result.IsSuccess && result.Value is not null)
+    {
+        return Results.Ok(result.Value); // ✅ Return the list
+    }
+
+    return Results.BadRequest(new { error = result.Error });
 });
 
 app.MapPut("/todos/{id}/complete", async (
@@ -100,7 +109,8 @@ app.MapGet("/todos/{id}", async (
     IQueryDispatcher dispatcher
 ) =>
 {
-    var result = await dispatcher.Dispatch<GetTodoByIdQuery, Result<Todo>>(new GetTodoByIdQuery(id));
+    var result = await dispatcher.Dispatch<GetTodoByIdQuery, Todo>(new GetTodoByIdQuery(id));
+
     return result.IsSuccess ? Results.Ok(result.Value) : Results.NotFound(result.Error);
 });
 

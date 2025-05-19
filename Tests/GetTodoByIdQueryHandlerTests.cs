@@ -52,7 +52,7 @@ namespace Tests
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal("Todo not found", result.Error);
+            Assert.Equal("Todo with ID 999 not found", result.Error);
         }
     }
 

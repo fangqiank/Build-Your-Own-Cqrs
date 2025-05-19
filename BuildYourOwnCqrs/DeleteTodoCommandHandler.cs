@@ -1,23 +1,33 @@
 ﻿using BuildYourOwnCqrs.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BuildYourOwnCqrs
 {
     public record DeleteTodoCommand(int Id) : ICommand<Result>;
 
     public class DeleteTodoCommandHandler(TodoDbContext db)
-    : ICommandHandler<DeleteTodoCommand, Result>
+     : ICommandHandler<DeleteTodoCommand, Result>
     {
-        public async Task<Result> Handle(
+        public async Task<Result<Result>> Handle(
             DeleteTodoCommand command,
             CancellationToken cancellationToken
         )
         {
-            var todo = await db.Todos.FindAsync(command.Id, cancellationToken);
-            if (todo is null) return Result.Failure("Todo not found");
+            if (command.Id <= 0) return Result<Result>.Failure("Invalid Todo ID");
 
-            db.Todos.Remove(todo);
-            await db.SaveChangesAsync(cancellationToken);
-            return Result.Success();
+            try
+            {
+                var todo = await db.Todos.FindAsync(command.Id, cancellationToken);
+                if (todo is null) return Result<Result>.Failure($"Todo with ID {command.Id} not found");
+
+                db.Todos.Remove(todo);
+                await db.SaveChangesAsync(cancellationToken);
+                return Result<Result>.Success(Result.Success());
+            }
+            catch (DbUpdateException ex)
+            {
+                return Result<Result>.Failure($"Failed to delete todo: {ex.Message}");
+            }
         }
     }
 }

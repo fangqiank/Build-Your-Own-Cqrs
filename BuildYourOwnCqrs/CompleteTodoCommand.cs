@@ -5,19 +5,20 @@ namespace BuildYourOwnCqrs
     public record CompleteTodoCommand(int Id) : ICommand<Result>;
 
     public class CompleteTodoCommandHandler(TodoDbContext db)
-        : ICommandHandler<CompleteTodoCommand, Result>
+    : ICommandHandler<CompleteTodoCommand, Result>
     {
-        public async Task<Result> Handle(
+        public async Task<Result<Result>> Handle(
             CompleteTodoCommand command,
             CancellationToken cancellationToken
         )
         {
             var todo = await db.Todos.FindAsync(command.Id, cancellationToken);
-            if (todo is null) return Result.Failure("Todo not found");
+            if (todo is null) 
+                return Result<Result>.Failure($"Todo with ID {command.Id} not found");
 
             todo.IsCompleted = true;
             await db.SaveChangesAsync(cancellationToken);
-            return Result.Success();
+            return Result<Result>.Success(Result.Success());
         }
     }
 }

@@ -17,12 +17,17 @@
 
     public class Result<T> : Result
     {
-        public T? Value { get; init; }
+        public T Value { get; }
 
-        private Result(T? value, bool isSuccess, string error) : base(isSuccess, error)
-            => Value = value;
+        private Result(T value, bool isSuccess, string error) : base(isSuccess, error)
+        {
+            if (isSuccess && value == null)
+                throw new ArgumentNullException(nameof(value), "Value cannot be null for success results.");
+
+            Value = value;
+        }
 
         public static Result<T> Success(T value) => new(value, true, string.Empty);
-        public new static Result<T> Failure(string error) => new(default, false, error);
+        public static Result<T> Failure(string error) => new(default!, false, error);
     }
 }

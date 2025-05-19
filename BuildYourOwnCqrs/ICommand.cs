@@ -1,13 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace BuildYourOwnCqrs
+﻿namespace BuildYourOwnCqrs
 {
+    public interface IBaseCommand;
     // Commands
-    public interface ICommand<out TResult>;
+    public interface ICommand: IBaseCommand;
 
-    public interface ICommandHandler<in TCommand, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TResult>
-        where TCommand : ICommand<TResult>
-    {
-        Task<TResult> Handle(TCommand command, CancellationToken cancellationToken);
-    }
+    public interface ICommand<TResponse> : IBaseCommand;
 }
