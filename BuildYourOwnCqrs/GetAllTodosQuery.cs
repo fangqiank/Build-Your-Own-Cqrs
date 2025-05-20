@@ -7,8 +7,11 @@ namespace BuildYourOwnCqrs
 {
     public record GetAllTodosQuery : IQuery<IEnumerable<Todo>>;
 
-    public class GetAllTodosQueryHandler(TodoDbContext db, IMemoryCache cache, ILogger<GetAllTodosQueryHandler> logger)
-    : IQueryHandler<GetAllTodosQuery, IEnumerable<Todo>>
+    public class GetAllTodosQueryHandler(
+        TodoDbContext db, 
+        IMemoryCache cache, 
+        ILogger<GetAllTodosQueryHandler> logger
+    ) : IQueryHandler<GetAllTodosQuery, IEnumerable<Todo>>
     {
         public async Task<Result<IEnumerable<Todo>>> Handle(
             GetAllTodosQuery query,
@@ -42,10 +45,16 @@ namespace BuildYourOwnCqrs
 
                 return Result<IEnumerable<Todo>>.Success(todos);
             }
+            catch (DbUpdateException ex) // 明确捕获数据库异常
+            {
+                logger.LogError(ex, "数据库查询失败");
+
+                return Result<IEnumerable<Todo>>.Failure($"数据库错误: {ex.Message}");
+            }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to retrieve todos from database.");
-                return Result<IEnumerable<Todo>>.Failure("An error occurred while retrieving todos.");
+                logger.LogError(ex, "未知错误");
+                return Result<IEnumerable<Todo>>.Failure("未知错误");
             }
         }
     }

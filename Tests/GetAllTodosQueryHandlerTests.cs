@@ -83,6 +83,35 @@ namespace Tests
             Assert.Equal("Cached Todo", todos[0].Title);
         }
 
+        //[Fact]
+        //public async Task Handle_ShouldReturnFailureWhenDatabaseFails()
+        //{
+        //    // Arrange
+        //    var options = new DbContextOptionsBuilder<TodoDbContext>()
+        //        .UseInMemoryDatabase("TestDb_Exception")
+        //        .Options;
+
+        //    using var dbContext = new TodoDbContext(options);
+
+        //    // 插入非法数据（如 Title 为 null）
+        //    dbContext.Todos.Add(new Todo { Title = null! });
+
+        //    // 强制抛出异常（模拟数据库错误）
+        //    var mockLogger = new Mock<ILogger<GetAllTodosQueryHandler>>();
+        //    var handler = new GetAllTodosQueryHandler(
+        //        dbContext,
+        //        _memoryCache,
+        //        mockLogger.Object
+        //    );
+
+        //    // Act
+        //    var result = await handler.Handle(new GetAllTodosQuery(), CancellationToken.None);
+
+        //    // Assert
+        //    Assert.False(result.IsSuccess);
+        //    Assert.Equal("An error occurred while retrieving todos.", result.Error);
+        //}
+
         [Fact]
         public async Task Handle_ShouldReturnFailureWhenDatabaseFails()
         {
@@ -91,16 +120,22 @@ namespace Tests
                 .UseInMemoryDatabase("TestDb_Exception")
                 .Options;
 
-            using var dbContext = new TodoDbContext(options);
+            // 1. 创建模拟的 DbSet<Todo>
+            var mockDbSet = new Mock<DbSet<Todo>>();
 
-            // 插入非法数据（如 Title 为 null）
-            dbContext.Todos.Add(new Todo { Title = null! });
+            // 2. 设置异步枚举器抛出异常（触发 ToListAsync 失败）
+            mockDbSet.As<IAsyncEnumerable<Todo>>()
+                .Setup(m => m.GetAsyncEnumerator(It.IsAny<CancellationToken>()))
+                .Throws(new DbUpdateException("Simulated database failure"));
 
-            // 强制抛出异常（模拟数据库错误）
+            // 3. 将 DbSet 绑定到 DbContext
+            var mockDbContext = new Mock<TodoDbContext>(options);
+            mockDbContext.Setup(m => m.Todos).Returns(mockDbSet.Object);
+
             var mockLogger = new Mock<ILogger<GetAllTodosQueryHandler>>();
             var handler = new GetAllTodosQueryHandler(
-                dbContext,
-                _memoryCache,
+                mockDbContext.Object,
+                new MemoryCache(new MemoryCacheOptions()),
                 mockLogger.Object
             );
 
@@ -109,7 +144,7 @@ namespace Tests
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal("An error occurred while retrieving todos.", result.Error);
+            Assert.Contains("Simulated database failure", result.Error);
         }
     }
 }
